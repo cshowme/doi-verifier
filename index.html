@@ -12,9 +12,9 @@
 </head>
 <body>
 
-<!-- ========== AI 文獻驗證 & RIS 轉換器 v5.0 ========== -->
+<!-- ========== AI 文獻驗證 & RIS 轉換器 v5.2 ========== -->
 <!-- 開發者：陳思行（CSX）｜ 匯東華智慧體部 -->
-<!-- 建立日期：2026-01-22 -->
+<!-- 建立日期：2026-01-23 -->
 <!-- v5 更新：放大警告 DOI 並加紅底白字背景、陳思行改為 CSX 圖章 -->
 <style>
 /* ==================== 配色變數 ==================== */
@@ -1204,8 +1204,8 @@
             不僅影響論文品質，更可能導致退稿或學術信譽受損。
         </p>
         <div class="solution">
-            <strong>解決方案：</strong>本工具透過 CrossRef 資料庫即時驗證每一筆 DOI，
-            <strong>查得到 = 真實文獻</strong>，<strong>查不到 = 高度可疑</strong>（可能是 AI 幻覺）。
+            <strong>解決方案：</strong>本工具透過 CrossRef 資料庫即時驗證被收錄文獻的 DOI，
+            <strong>查得到 = 真實文獻</strong>，<strong>查不到 = 高度可疑</strong>（可能是 AI 幻覺或部分中文文獻）。
         </div>
     </div>
 
@@ -1218,7 +1218,7 @@
                 </svg>
             </div>
             <h4>驗證成功 = 真實文獻</h4>
-            <p>CrossRef 是全球最大的 DOI 註冊機構，<strong>收錄超過 1.5 億筆學術文獻記錄</strong>。查得到代表文獻確實存在於正式學術資料庫中。</p>
+            <p>CrossRef 為全球最大的 DOI 註冊機構，<strong>收錄超過 1.5 億筆學術文獻記錄</strong>。查得到代表文獻確實存在於正式學術資料庫中。</p>
         </div>
         <div class="hdh-verify-card fail">
             <div class="icon">
@@ -1228,8 +1228,11 @@
                     <line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
             </div>
-            <h4>無法驗證成功 = 高度可疑</h4>
-            <p>查不到可能是：AI 幻覺（虛構）、DOI 格式錯誤、或極少數未收錄的文獻。<strong>建議手動確認或排除使用</strong>。</p>
+            <h4>無法驗證成功 = 請保持懷疑</h4>
+                <p>查不到可能是：AI 幻覺（虛構）、DOI 格式錯誤、或極少數未收錄的文獻。<strong>建議手動確認或排除使用</strong>。</p>
+                <p style="margin-top: 16px; padding: 14px; background-color: rgba(255,193,7,0.1); border-left: 4px solid #FFC107; border-radius: 8px; color: #666; font-size: 14px; line-height: 1.6;">
+                    ⚠️ <strong>特別說明：</strong>部分台灣期刊（如 <a href="https://www.airitilibrary.com/" target="_blank" style="color: #B82226; text-decoration: underline;">Airiti Library 華藝線上圖書館</a>註冊之 DOI，開頭為 <code style="background-color: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-family: monospace;">10.6226</code> 等）可能無法透過 CrossRef 國際資料庫驗證。本工具僅驗證 CrossRef 體系內的文獻。若您確定文獻來源無誤，請忽略此訊息。
+                </p>
         </div>
     </div>
 
@@ -1571,7 +1574,7 @@
 
     <!-- 頁尾 -->
     <div class="hdh-footer">
-        <p>AI 文獻驗證 & RIS 轉換器 v5.0 ｜ © 2026 <a href="https://www.medatatw.com" target="_blank">匯東華統計顧問有限公司</a></p>
+        <p>AI 文獻驗證 & RIS 轉換器 v5.2 ｜ © 2026 <a href="https://www.medatatw.com" target="_blank">匯東華統計顧問有限公司</a></p>
         <p>本工具使用 <a href="https://www.crossref.org/" target="_blank">CrossRef</a> 公開 API，免費提供學術社群使用</p>
         <div class="dev-credit">
             <span class="dept-badge">
