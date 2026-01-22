@@ -1,0 +1,1948 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 文獻驗證 & RIS 轉換器 | 匯東華統計顧問有限公司</title>
+    <meta name="description" content="驗證 AI 找到的文獻是否真實存在，並轉換成 EndNote/Zotero 可匯入的 RIS 格式。解決 AI 幻覺問題。">
+    <meta name="keywords" content="DOI, RIS, EndNote, Zotero, 文獻管理, AI幻覺, 文獻驗證, 匯東華">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://www.medatatw.com/static/website/270/270731/files/favicon.ico">
+</head>
+<body>
+
+<!-- ========== AI 文獻驗證 & RIS 轉換器 v5.0 ========== -->
+<!-- 開發者：陳思行（CSX）｜ 匯東華智慧體部 -->
+<!-- 建立日期：2026-01-22 -->
+<!-- v5 更新：放大警告 DOI 並加紅底白字背景、陳思行改為 CSX 圖章 -->
+<style>
+/* ==================== 配色變數 ==================== */
+.hdh-tool-content {
+    --hdh-red: #B82226;
+    --hdh-red-dark: #8a1a1d;
+    --hdh-gold: #C4A46D;
+    --hdh-gold-dark: #a68b5b;
+    --hdh-dark: #333333;
+    --hdh-gray: #666666;
+    --hdh-light: #f8f6f0;
+    --hdh-border: #e0e0e0;
+    --hdh-white: #ffffff;
+    --hdh-success: #28a745;
+    --hdh-warning: #ffc107;
+    --hdh-danger: #dc3545;
+    font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif;
+    line-height: 1.8;
+    color: var(--hdh-dark);
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ==================== Hero 區塊 ==================== */
+.hdh-hero {
+    background: linear-gradient(135deg, var(--hdh-red) 0%, var(--hdh-red-dark) 50%, var(--hdh-red) 100%);
+    color: var(--hdh-white);
+    padding: 60px 40px;
+    text-align: center;
+    margin-bottom: 50px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hdh-hero::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    height: 350px;
+    background: url('https://www.medatatw.com/static/website/270/270731/files/課程報名/曇月靈01-去背景.png') center/contain no-repeat;
+    opacity: 0.15;
+    pointer-events: none;
+}
+
+.hdh-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--hdh-gold);
+    color: var(--hdh-red-dark);
+    padding: 10px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    position: relative;
+    z-index: 1;
+}
+
+.hdh-hero h1 {
+    font-size: 38px;
+    margin-bottom: 20px;
+    font-weight: bold;
+    line-height: 1.4;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.hdh-hero .subtitle {
+    font-size: 22px;
+    opacity: 0.95;
+    margin-bottom: 15px;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
+}
+
+.hdh-hero .tagline {
+    font-size: 18px;
+    color: var(--hdh-gold);
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+}
+
+/* ==================== 區塊標題 ==================== */
+.hdh-section-title {
+    font-size: 28px;
+    color: var(--hdh-red);
+    border-bottom: 4px solid var(--hdh-gold);
+    padding-bottom: 12px;
+    margin: 50px 0 30px;
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* ==================== 痛點區塊 ==================== */
+.hdh-pain-box {
+    background: linear-gradient(135deg, #fff5f5 0%, var(--hdh-white) 100%);
+    border: 2px solid var(--hdh-danger);
+    border-radius: 12px;
+    padding: 35px;
+    margin: 30px 0;
+    position: relative;
+}
+
+.hdh-pain-box::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 30px;
+    right: 30px;
+    height: 4px;
+    background: var(--hdh-danger);
+    border-radius: 0 0 4px 4px;
+}
+
+.hdh-pain-title {
+    color: var(--hdh-danger);
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hdh-pain-box p {
+    font-size: 17px;
+    line-height: 1.9;
+    margin-bottom: 15px;
+}
+
+.hdh-pain-box .solution {
+    background: #e8f5e9;
+    border-left: 4px solid var(--hdh-success);
+    padding: 18px 22px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 20px;
+}
+
+.hdh-pain-box .solution strong {
+    color: var(--hdh-success);
+}
+
+/* ==================== 驗證說明卡片 ==================== */
+.hdh-verify-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.hdh-verify-card {
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.hdh-verify-card.success {
+    background: #e8f5e9;
+    border: 2px solid var(--hdh-success);
+}
+
+.hdh-verify-card.fail {
+    background: #fff3e0;
+    border: 2px solid #ff9800;
+}
+
+.hdh-verify-card .icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+}
+
+.hdh-verify-card.success .icon {
+    background: var(--hdh-success);
+}
+
+.hdh-verify-card.fail .icon {
+    background: #ff9800;
+}
+
+.hdh-verify-card h4 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.hdh-verify-card.success h4 {
+    color: var(--hdh-success);
+}
+
+.hdh-verify-card.fail h4 {
+    color: #e65100;
+}
+
+.hdh-verify-card p {
+    font-size: 15px;
+    color: var(--hdh-gray);
+    line-height: 1.6;
+}
+
+/* ==================== 工具說明區塊 ==================== */
+.hdh-intro-box {
+    background: linear-gradient(135deg, var(--hdh-light) 0%, var(--hdh-white) 100%);
+    border: 2px solid var(--hdh-gold);
+    border-radius: 12px;
+    padding: 35px;
+    margin: 30px 0;
+    position: relative;
+}
+
+.hdh-intro-box::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 30px;
+    right: 30px;
+    height: 4px;
+    background: var(--hdh-red);
+    border-radius: 0 0 4px 4px;
+}
+
+.hdh-intro-title {
+    color: var(--hdh-red);
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hdh-intro-box p {
+    font-size: 17px;
+    line-height: 1.9;
+    margin-bottom: 15px;
+    text-align: justify;
+}
+
+.hdh-intro-box strong {
+    color: var(--hdh-red);
+}
+
+.hdh-intro-box .highlight {
+    background: linear-gradient(transparent 60%, rgba(196, 164, 109, 0.3) 60%);
+    padding: 0 2px;
+}
+
+/* ==================== DOI 格式說明區塊 ==================== */
+.hdh-format-notice {
+    background: #e3f2fd;
+    border: 2px solid #1976d2;
+    border-radius: 8px;
+    padding: 20px 25px;
+    margin: 25px 0;
+}
+
+.hdh-format-notice h4 {
+    color: #1565c0;
+    font-size: 18px;
+    margin: 0 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hdh-format-notice .format-example {
+    background: var(--hdh-white);
+    border-radius: 6px;
+    padding: 15px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 15px;
+    margin: 10px 0;
+}
+
+.hdh-format-notice .format-example .valid {
+    color: var(--hdh-success);
+}
+
+.hdh-format-notice .format-example .invalid {
+    color: var(--hdh-danger);
+    text-decoration: line-through;
+}
+
+.hdh-format-notice p {
+    font-size: 15px;
+    color: var(--hdh-dark);
+    margin: 10px 0 0 0;
+    line-height: 1.6;
+}
+
+/* ==================== 使用限制提示 ==================== */
+.hdh-limit-notice {
+    background: #fff3cd;
+    border: 2px solid var(--hdh-gold);
+    border-radius: 8px;
+    padding: 20px 25px;
+    margin: 25px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.hdh-limit-notice .notice-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--hdh-gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hdh-limit-notice .notice-content h4 {
+    color: var(--hdh-red-dark);
+    font-size: 16px;
+    margin: 0 0 8px 0;
+}
+
+.hdh-limit-notice .notice-content p {
+    color: #856404;
+    font-size: 15px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ==================== 步驟卡片 ==================== */
+.hdh-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin: 30px 0;
+}
+
+.hdh-step-card {
+    background: var(--hdh-white);
+    border: 2px solid var(--hdh-border);
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.hdh-step-card:hover {
+    border-color: var(--hdh-red);
+    box-shadow: 0 8px 25px rgba(184, 34, 38, 0.15);
+    transform: translateY(-5px);
+}
+
+.hdh-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--hdh-red) 0%, var(--hdh-red-dark) 100%);
+    color: var(--hdh-white);
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(184, 34, 38, 0.3);
+}
+
+.hdh-step-card h3 {
+    color: var(--hdh-dark);
+    font-size: 20px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.hdh-step-card p {
+    color: var(--hdh-gray);
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+/* ==================== 工具主區塊 ==================== */
+.hdh-tool-container {
+    background: var(--hdh-white);
+    border: 2px solid var(--hdh-border);
+    border-radius: 12px;
+    padding: 40px;
+    margin: 30px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.hdh-input-section {
+    margin-bottom: 30px;
+}
+
+.hdh-input-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--hdh-red);
+    margin-bottom: 15px;
+}
+
+.hdh-input-hint {
+    font-size: 15px;
+    color: var(--hdh-gray);
+    margin-bottom: 15px;
+}
+
+.hdh-textarea {
+    width: 100%;
+    height: 200px;
+    padding: 18px;
+    font-size: 16px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    border: 2px solid var(--hdh-border);
+    border-radius: 8px;
+    resize: vertical;
+    transition: all 0.3s ease;
+    background: #fafafa;
+}
+
+.hdh-textarea:focus {
+    outline: none;
+    border-color: var(--hdh-red);
+    background: var(--hdh-white);
+    box-shadow: 0 0 0 3px rgba(184, 34, 38, 0.1);
+}
+
+/* 範例區塊 */
+.hdh-example-box {
+    background: var(--hdh-light);
+    border: 1px solid var(--hdh-border);
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+.hdh-example-toggle {
+    background: none;
+    border: none;
+    color: var(--hdh-red);
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+}
+
+.hdh-example-toggle:hover {
+    text-decoration: underline;
+}
+
+.hdh-example-toggle svg {
+    transition: transform 0.3s;
+}
+
+.hdh-example-toggle.active svg {
+    transform: rotate(90deg);
+}
+
+.hdh-example-content {
+    display: none;
+    margin-top: 15px;
+    padding: 15px;
+    background: var(--hdh-white);
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
+    border-left: 3px solid var(--hdh-gold);
+}
+
+.hdh-example-content.show {
+    display: block;
+}
+
+/* 按鈕 */
+.hdh-btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 30px 0;
+}
+
+.hdh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.hdh-btn-primary {
+    background: linear-gradient(135deg, var(--hdh-red) 0%, var(--hdh-red-dark) 100%);
+    color: var(--hdh-white);
+    box-shadow: 0 4px 15px rgba(184, 34, 38, 0.3);
+}
+
+.hdh-btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(184, 34, 38, 0.4);
+}
+
+.hdh-btn-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 進度條 */
+.hdh-progress-container {
+    display: none;
+    margin: 25px 0;
+}
+
+.hdh-progress-bar {
+    width: 100%;
+    height: 12px;
+    background: var(--hdh-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.hdh-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--hdh-red) 0%, var(--hdh-gold) 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 6px;
+}
+
+.hdh-progress-text {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 15px;
+    color: var(--hdh-gray);
+}
+
+/* ==================== 格式錯誤提示 ==================== */
+.hdh-skipped-notice {
+    background: #ffebee;
+    border: 2px solid var(--hdh-danger);
+    border-radius: 8px;
+    padding: 20px 25px;
+    margin: 20px 0;
+    display: none;
+}
+
+.hdh-skipped-notice h4 {
+    color: var(--hdh-danger);
+    font-size: 18px;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hdh-skipped-notice p {
+    color: #c62828;
+    font-size: 15px;
+    margin: 0 0 10px 0;
+    line-height: 1.6;
+}
+
+.hdh-skipped-notice ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.hdh-skipped-notice li {
+    color: #c62828;
+    font-size: 14px;
+    margin-bottom: 5px;
+    font-family: monospace;
+}
+
+/* ==================== 結果區塊 ==================== */
+.hdh-result-section {
+    display: none;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 3px solid var(--hdh-gold);
+}
+
+.hdh-result-header {
+    background: linear-gradient(135deg, var(--hdh-light) 0%, var(--hdh-white) 100%);
+    padding: 18px 25px;
+    border-radius: 8px;
+    border-left: 5px solid var(--hdh-red);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hdh-result-header h3 {
+    color: var(--hdh-red);
+    margin: 0;
+    font-size: 22px;
+}
+
+.hdh-result-stats {
+    display: flex;
+    gap: 20px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+}
+
+.hdh-stat-item {
+    background: var(--hdh-white);
+    border: 2px solid var(--hdh-border);
+    border-radius: 12px;
+    padding: 25px 35px;
+    text-align: center;
+    min-width: 140px;
+    transition: all 0.3s ease;
+}
+
+.hdh-stat-item.success {
+    border-color: var(--hdh-success);
+}
+
+.hdh-stat-item.success .hdh-stat-number {
+    color: var(--hdh-success);
+}
+
+.hdh-stat-item.fail {
+    border-color: #ff9800;
+}
+
+.hdh-stat-item.fail .hdh-stat-number {
+    color: #ff9800;
+}
+
+.hdh-stat-number {
+    font-size: 42px;
+    font-weight: bold;
+    color: var(--hdh-red);
+    line-height: 1;
+}
+
+.hdh-stat-label {
+    font-size: 14px;
+    color: var(--hdh-gray);
+    margin-top: 8px;
+}
+
+/* 結果表格 */
+.hdh-result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 25px 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.hdh-result-table thead {
+    background: linear-gradient(135deg, var(--hdh-red) 0%, var(--hdh-red-dark) 100%);
+    color: var(--hdh-white);
+}
+
+.hdh-result-table th {
+    padding: 16px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: left;
+}
+
+.hdh-result-table th .link-hint {
+    font-weight: normal;
+    font-size: 11px;
+    opacity: 0.8;
+    display: block;
+    margin-top: 2px;
+}
+
+.hdh-result-table tbody tr {
+    background: var(--hdh-white);
+    transition: background 0.3s ease;
+}
+
+.hdh-result-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.hdh-result-table tbody tr:hover {
+    background: #fff3e0;
+}
+
+.hdh-result-table td {
+    padding: 14px 15px;
+    font-size: 14px;
+    color: var(--hdh-dark);
+    border-bottom: 1px solid var(--hdh-border);
+    vertical-align: top;
+}
+
+/* DOI 連結樣式 */
+.hdh-result-table td a.doi-link {
+    color: var(--hdh-red);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hdh-result-table td a.doi-link:hover {
+    color: var(--hdh-red-dark);
+    text-decoration-style: solid;
+}
+
+.hdh-result-table td a.doi-link .external-icon {
+    width: 12px;
+    height: 12px;
+    opacity: 0.6;
+}
+
+.hdh-result-table .title-cell {
+    max-width: 300px;
+}
+
+.hdh-result-table .title-cell a {
+    color: var(--hdh-dark);
+    text-decoration: none;
+}
+
+.hdh-result-table .title-cell a:hover {
+    color: var(--hdh-red);
+    text-decoration: underline;
+}
+
+/* ==================== 失敗清單（加大字體） ==================== */
+.hdh-fail-list {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffecb3 100%);
+    border: 3px solid #ff9800;
+    border-radius: 12px;
+    padding: 25px 30px;
+    margin: 25px 0;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2);
+}
+
+.hdh-fail-list h4 {
+    color: #e65100;
+    font-size: 20px;
+    margin: 0 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hdh-fail-list .warning-text {
+    color: #bf360c;
+    font-weight: bold;
+    font-size: 17px;
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+    border-left: 4px solid #e65100;
+}
+
+.hdh-fail-list li {
+    color: #ffffff;
+    margin-bottom: 12px;
+    font-family: 'Consolas', monospace;
+    font-size: 18px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    padding: 12px 18px;
+    border-radius: 8px;
+    list-style: none;
+    box-shadow: 0 2px 8px rgba(183, 28, 28, 0.3);
+}
+
+.hdh-fail-list ul {
+    padding-left: 0;
+}
+
+/* ==================== 下載區塊 ==================== */
+.hdh-download-section {
+    background: linear-gradient(135deg, var(--hdh-light) 0%, var(--hdh-white) 100%);
+    padding: 35px;
+    border-radius: 12px;
+    border: 2px solid var(--hdh-gold);
+    margin: 30px 0;
+}
+
+.hdh-download-section h3 {
+    color: var(--hdh-red);
+    margin: 0 0 25px 0;
+    font-size: 22px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.hdh-download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.hdh-download-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 20px;
+    background: linear-gradient(135deg, var(--hdh-gold) 0%, var(--hdh-gold-dark) 100%);
+    color: var(--hdh-white);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(196, 164, 109, 0.3);
+}
+
+.hdh-download-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(196, 164, 109, 0.4);
+}
+
+.hdh-download-btn .format {
+    font-size: 20px;
+    margin: 12px 0 6px;
+}
+
+.hdh-download-btn .desc {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+/* 提示區塊 */
+.hdh-tip-box {
+    background: #e3f2fd;
+    border-left: 5px solid #1976d2;
+    padding: 22px 28px;
+    border-radius: 0 8px 8px 0;
+    margin: 30px 0;
+}
+
+.hdh-tip-box h4 {
+    color: #1565c0;
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hdh-tip-box ol {
+    margin: 0;
+    padding-left: 22px;
+}
+
+.hdh-tip-box li {
+    margin-bottom: 10px;
+    line-height: 1.7;
+    color: var(--hdh-dark);
+}
+
+.hdh-tip-box li strong {
+    color: #1565c0;
+}
+
+/* ==================== CTA 區塊 ==================== */
+.hdh-cta {
+    background: linear-gradient(135deg, var(--hdh-red) 0%, var(--hdh-red-dark) 100%);
+    color: var(--hdh-white);
+    padding: 55px 40px;
+    text-align: center;
+    margin: 50px -20px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hdh-cta::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    background: url('https://www.medatatw.com/static/website/270/270731/files/課程報名/曇月靈01-去背景.png') center/contain no-repeat;
+    opacity: 0.08;
+    pointer-events: none;
+}
+
+.hdh-cta h2 {
+    font-size: 30px;
+    margin-bottom: 18px;
+    font-weight: bold;
+    position: relative;
+    z-index: 1;
+}
+
+.hdh-cta p {
+    margin-bottom: 30px;
+    opacity: 0.95;
+    font-size: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+.hdh-btn-gold {
+    background: linear-gradient(135deg, var(--hdh-gold) 0%, var(--hdh-gold-dark) 100%);
+    color: var(--hdh-red-dark);
+}
+
+.hdh-btn-gold:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(196, 164, 109, 0.5);
+}
+
+.hdh-btn-outline {
+    background: transparent;
+    color: var(--hdh-white);
+    border: 2px solid var(--hdh-white);
+}
+
+.hdh-btn-outline:hover {
+    background: var(--hdh-white);
+    color: var(--hdh-red);
+}
+
+/* ==================== 聯絡資訊 ==================== */
+.hdh-contact {
+    background: var(--hdh-light);
+    padding: 45px;
+    margin: 40px 0;
+    border-radius: 12px;
+}
+
+.hdh-contact h3 {
+    color: var(--hdh-red);
+    font-size: 24px;
+    margin-bottom: 28px;
+    text-align: center;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.hdh-contact-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+}
+
+.hdh-contact-list li {
+    padding: 14px 24px;
+    font-size: 16px;
+    background: var(--hdh-white);
+    border: 2px solid var(--hdh-border);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hdh-contact-list li:hover {
+    border-color: var(--hdh-red);
+    box-shadow: 0 4px 15px rgba(184, 34, 38, 0.1);
+    transform: translateY(-2px);
+}
+
+.hdh-contact-list li a {
+    color: var(--hdh-dark);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.hdh-contact-list li a:hover {
+    color: var(--hdh-red);
+}
+
+/* ==================== 頁尾 ==================== */
+.hdh-footer {
+    text-align: center;
+    padding: 35px;
+    color: var(--hdh-gray);
+    font-size: 14px;
+    border-top: 2px solid var(--hdh-border);
+    margin-top: 50px;
+}
+
+.hdh-footer a {
+    color: var(--hdh-red);
+    text-decoration: none;
+}
+
+.hdh-footer a:hover {
+    text-decoration: underline;
+}
+
+.hdh-footer .dev-credit {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--hdh-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #888;
+}
+
+.hdh-footer .dev-credit .dept-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #f5f0e6 0%, #ebe4d6 100%);
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--hdh-gold);
+}
+
+.hdh-footer .dev-credit .dept-badge img {
+    width: 28px;
+    height: 28px;
+}
+
+.hdh-footer .dev-credit .dept-name {
+    color: var(--hdh-gold-dark);
+    font-weight: bold;
+}
+
+.hdh-footer .dev-credit .csx-stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hdh-footer .dev-credit .csx-stamp svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* ==================== RWD 響應式設計 ==================== */
+@media (max-width: 768px) {
+    .hdh-tool-content {
+        padding: 0 15px;
+    }
+
+    .hdh-hero {
+        padding: 45px 25px;
+    }
+
+    .hdh-hero h1 {
+        font-size: 26px;
+    }
+
+    .hdh-section-title {
+        font-size: 22px;
+    }
+
+    .hdh-tool-container {
+        padding: 25px;
+    }
+
+    .hdh-btn-group {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hdh-btn {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .hdh-result-stats {
+        justify-content: center;
+    }
+
+    .hdh-stat-item {
+        flex: 1;
+        min-width: 100px;
+        padding: 20px 15px;
+    }
+
+    .hdh-stat-number {
+        font-size: 32px;
+    }
+
+    .hdh-download-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hdh-contact-list {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hdh-cta {
+        margin: 40px -15px;
+        padding: 40px 25px;
+    }
+
+    .hdh-verify-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .hdh-fail-list h4 {
+        font-size: 18px;
+    }
+
+    .hdh-fail-list .warning-text {
+        font-size: 15px;
+    }
+}
+</style>
+
+<!-- ========== 網頁內容 ========== -->
+<div class="hdh-tool-content">
+
+    <!-- Hero 區塊 -->
+    <div class="hdh-hero">
+        <span class="hdh-hero-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            免費驗證工具
+        </span>
+        <h1>AI 文獻驗證 & RIS 轉換器</h1>
+        <p class="subtitle">驗證 AI 找到的文獻是否真實存在，一鍵轉換成 EndNote/Zotero 格式</p>
+        <p class="tagline">解決 AI 幻覺問題 ｜ 免費使用 ｜ 即時驗證</p>
+    </div>
+
+    <!-- 痛點區塊 -->
+    <div class="hdh-pain-box">
+        <div class="hdh-pain-title">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            您是否遇過這個問題？
+        </div>
+        <p>
+            使用 AI（ChatGPT、Claude、Perplexity）搜尋文獻時，AI 提供的參考文獻<strong>看起來很像真的</strong>，
+            但實際上卻<strong>根本不存在</strong>——這就是所謂的<span class="highlight">「AI 幻覺」（Hallucination）</span>。
+        </p>
+        <p>
+            這個問題困擾著無數的研究者、學生、學者。如果不小心引用了假文獻，
+            不僅影響論文品質，更可能導致退稿或學術信譽受損。
+        </p>
+        <div class="solution">
+            <strong>解決方案：</strong>本工具透過 CrossRef 資料庫即時驗證每一筆 DOI，
+            <strong>查得到 = 真實文獻</strong>，<strong>查不到 = 高度可疑</strong>（可能是 AI 幻覺）。
+        </div>
+    </div>
+
+    <!-- 驗證說明卡片 -->
+    <div class="hdh-verify-cards">
+        <div class="hdh-verify-card success">
+            <div class="icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <h4>驗證成功 = 真實文獻</h4>
+            <p>CrossRef 是全球最大的 DOI 註冊機構，<strong>收錄超過 1.5 億筆學術文獻記錄</strong>。查得到代表文獻確實存在於正式學術資料庫中。</p>
+        </div>
+        <div class="hdh-verify-card fail">
+            <div class="icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+            <h4>無法驗證成功 = 高度可疑</h4>
+            <p>查不到可能是：AI 幻覺（虛構）、DOI 格式錯誤、或極少數未收錄的文獻。<strong>建議手動確認或排除使用</strong>。</p>
+        </div>
+    </div>
+
+    <!-- DOI 格式說明 -->
+    <div class="hdh-format-notice">
+        <h4>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+            </svg>
+            DOI 格式說明（重要！）
+        </h4>
+        <div class="format-example">
+            <span class="valid">✓ 正確格式：</span>10.1136/bmj.n71、10.1038/s41586-021-03819-2<br>
+            <span class="invalid">✗ 錯誤格式：</span>（無DOI）、doi:10.xxx、https://doi.org/xxx
+        </div>
+        <p>
+            <strong>DOI 必須以「10.」開頭</strong>。若 AI 提供的文獻沒有 DOI 或格式不正確，
+            本工具會自動忽略該行。建議向 AI 明確要求：「請提供完整的 DOI，格式為 10.xxxx/xxxxx」。
+        </p>
+    </div>
+
+    <!-- 工具說明 -->
+    <div class="hdh-intro-box">
+        <div class="hdh-intro-title">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+            </svg>
+            這個工具能做什麼？
+        </div>
+        <p>
+            當您使用 <strong>AI 工具</strong>搜尋學術文獻時，
+            AI 通常會提供文獻的 <span class="highlight">DOI（數位物件識別碼）</span>，
+            例如 <code>10.1136/bmj.n71</code>。
+        </p>
+        <p>
+            本工具可以<strong>批次驗證</strong>這些 DOI 是否真實存在，
+            同時自動補全完整的書目資訊（標題、作者、期刊、年份等），
+            並轉換成 <strong>RIS 格式</strong>，
+            讓您可以<span class="highlight">一鍵匯入 EndNote、Zotero、Mendeley</span>。
+        </p>
+        <p>
+            <strong>驗證真偽 + 自動轉檔，一次完成！</strong>
+        </p>
+    </div>
+
+    <!-- 使用限制提示 -->
+    <div class="hdh-limit-notice">
+        <div class="notice-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#856404" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        </div>
+        <div class="notice-content">
+            <h4>使用限制說明</h4>
+            <p>建議每次貼入 <strong>20～30 筆 DOI</strong>，若需處理大量文獻請分批驗證。本工具使用 CrossRef 免費公開 API，完全免費。</p>
+        </div>
+    </div>
+
+    <!-- 使用步驟 -->
+    <h2 class="hdh-section-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        使用方式
+    </h2>
+
+    <div class="hdh-steps-grid">
+        <div class="hdh-step-card">
+            <div class="hdh-step-number">1</div>
+            <h3>請 AI 提供 DOI</h3>
+            <p>向 AI 請求文獻時，加上「請列出每篇文獻的 DOI，格式為 10.xxxx/xxxxx」</p>
+        </div>
+        <div class="hdh-step-card">
+            <div class="hdh-step-number">2</div>
+            <h3>貼上驗證</h3>
+            <p>將 DOI 清單貼入下方輸入框，點擊「開始驗證」（建議 20～30 筆）</p>
+        </div>
+        <div class="hdh-step-card">
+            <div class="hdh-step-number">3</div>
+            <h3>下載匯入</h3>
+            <p>確認驗證結果後，下載 RIS 檔匯入 EndNote 或 Zotero</p>
+        </div>
+    </div>
+
+    <!-- 工具主區塊 -->
+    <div class="hdh-tool-container">
+        <div class="hdh-input-section">
+            <label class="hdh-input-label">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                輸入 DOI 清單
+            </label>
+            <p class="hdh-input-hint">每行一個 DOI（必須以 10. 開頭），程式會自動驗證並補全完整書目資訊</p>
+
+            <!-- 範例 -->
+            <div class="hdh-example-box">
+                <button class="hdh-example-toggle" id="example-toggle" onclick="toggleExample()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                    查看輸入範例
+                </button>
+                <div class="hdh-example-content" id="example-content">10.1136/bmj.n71
+10.1038/s41586-021-03819-2
+10.1371/journal.pdig.0000198
+10.1136/bmj.d5928
+10.1001/jama.2023.25054</div>
+            </div>
+
+            <textarea class="hdh-textarea" id="doi-input" placeholder="10.1136/bmj.n71
+10.1038/s41586-021-03819-2
+...（每行一個 DOI，必須以 10. 開頭）"></textarea>
+        </div>
+
+        <!-- 轉換按鈕 -->
+        <div class="hdh-btn-group">
+            <button class="hdh-btn hdh-btn-primary" id="convert-btn" onclick="startConversion()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                開始驗證
+            </button>
+        </div>
+
+        <!-- 格式錯誤提示 -->
+        <div class="hdh-skipped-notice" id="skipped-notice">
+            <h4>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                以下內容格式不正確，已被忽略：
+            </h4>
+            <p>DOI 必須以「<strong>10.</strong>」開頭。以下行沒有偵測到有效的 DOI 格式：</p>
+            <ul id="skipped-items"></ul>
+        </div>
+
+        <!-- 進度條 -->
+        <div class="hdh-progress-container" id="progress-container">
+            <div class="hdh-progress-bar">
+                <div class="hdh-progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="hdh-progress-text" id="progress-text">正在驗證...</div>
+        </div>
+
+        <!-- 結果區塊 -->
+        <div class="hdh-result-section" id="result-section">
+            <div class="hdh-result-header">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <h3>驗證結果</h3>
+            </div>
+
+            <div class="hdh-result-stats">
+                <div class="hdh-stat-item success">
+                    <div class="hdh-stat-number" id="stat-success">0</div>
+                    <div class="hdh-stat-label">已驗證（真實）</div>
+                </div>
+                <div class="hdh-stat-item fail">
+                    <div class="hdh-stat-number" id="stat-fail">0</div>
+                    <div class="hdh-stat-label">無法驗證成功（可疑）</div>
+                </div>
+                <div class="hdh-stat-item">
+                    <div class="hdh-stat-number" id="stat-total">0</div>
+                    <div class="hdh-stat-label">總計 DOI</div>
+                </div>
+            </div>
+
+            <!-- 失敗清單 -->
+            <div class="hdh-fail-list" id="fail-list" style="display: none;">
+                <h4>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e65100" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    以下 DOI 無法驗證成功：
+                </h4>
+                <p class="warning-text">這些可能是 AI 幻覺（虛構文獻），建議手動確認或排除使用！</p>
+                <ul id="fail-items"></ul>
+            </div>
+
+            <!-- 結果表格 -->
+            <table class="hdh-result-table" id="result-table">
+                <thead>
+                    <tr>
+                        <th>DOI<span class="link-hint">點擊可開啟原文</span></th>
+                        <th>標題</th>
+                        <th>作者</th>
+                        <th>年份</th>
+                        <th>期刊</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                </tbody>
+            </table>
+
+            <!-- 下載區塊 -->
+            <div class="hdh-download-section">
+                <h3>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    下載已驗證的文獻
+                </h3>
+                <div class="hdh-download-grid">
+                    <button class="hdh-download-btn" onclick="downloadRIS()">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        <span class="format">RIS 格式</span>
+                        <span class="desc">EndNote / Zotero</span>
+                    </button>
+                    <button class="hdh-download-btn" onclick="downloadBibTeX()">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                        <span class="format">BibTeX 格式</span>
+                        <span class="desc">LaTeX</span>
+                    </button>
+                    <button class="hdh-download-btn" onclick="downloadCSV()">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="3" y1="9" x2="21" y2="9"/>
+                            <line x1="3" y1="15" x2="21" y2="15"/>
+                            <line x1="9" y1="3" x2="9" y2="21"/>
+                            <line x1="15" y1="3" x2="15" y2="21"/>
+                        </svg>
+                        <span class="format">CSV 格式</span>
+                        <span class="desc">Excel / R</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 提示 -->
+            <div class="hdh-tip-box">
+                <h4>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    下一步
+                </h4>
+                <ol>
+                    <li><strong>EndNote</strong>：File → Import → 選擇 RIS 檔案 → Import Option 選「RefMan RIS」</li>
+                    <li><strong>Zotero</strong>：File → Import → 選擇 RIS 檔案</li>
+                    <li><strong>下載全文</strong>：EndNote 需執行「Find Full Text」；Zotero 會自動嘗試尋找</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA 區塊 -->
+    <div class="hdh-cta">
+        <h2>想學習更多 AI 輔助研究技巧？</h2>
+        <p>匯東華統計學院提供完整的 AI 助力研究工作流課程</p>
+        <div class="hdh-btn-group">
+            <a href="https://medata.teaches.cc/" target="_blank" class="hdh-btn hdh-btn-gold">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+                前往統計學院
+            </a>
+            <a href="https://www.medatatw.com" target="_blank" class="hdh-btn hdh-btn-outline">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                了解更多服務
+            </a>
+        </div>
+    </div>
+
+    <!-- 聯絡資訊 -->
+    <div class="hdh-contact">
+        <h3>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            聯絡我們
+        </h3>
+        <ul class="hdh-contact-list">
+            <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <a href="https://www.medatatw.com" target="_blank">官網</a>
+            </li>
+            <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+                <a href="https://medata.teaches.cc/" target="_blank">匯東華統計學院</a>
+            </li>
+            <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <a href="https://lin.ee/YcV3eSs" target="_blank">LINE @medatatw</a>
+            </li>
+            <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                <a href="mailto:info@medatatw.com">info@medatatw.com</a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 頁尾 -->
+    <div class="hdh-footer">
+        <p>AI 文獻驗證 & RIS 轉換器 v5.0 ｜ © 2026 <a href="https://www.medatatw.com" target="_blank">匯東華統計顧問有限公司</a></p>
+        <p>本工具使用 <a href="https://www.crossref.org/" target="_blank">CrossRef</a> 公開 API，免費提供學術社群使用</p>
+        <div class="dev-credit">
+            <span class="dept-badge">
+                <!-- 智慧體部部徽：請將圖片上傳至官網後更新此路徑 -->
+                <img src="assets/智慧體部大印-3D浮雕版V3-去背版.png" alt="智慧體部" onerror="this.style.display='none'">
+                <span class="dept-name">智慧體部</span>
+            </span>
+            開發 ｜ <span class="csx-stamp" title="陳思行（CSX）">
+                <svg viewBox="0 0 80 80" width="32" height="32">
+                    <circle cx="40" cy="40" r="38" fill="none" stroke="#B82226" stroke-width="3"/>
+                    <circle cx="40" cy="40" r="32" fill="none" stroke="#B82226" stroke-width="1.5"/>
+                    <text x="40" y="46" font-family="Georgia, serif" font-size="22" font-weight="bold" fill="#B82226" text-anchor="middle">CSX</text>
+                    <line x1="22" y1="54" x2="58" y2="54" stroke="#C4A46D" stroke-width="1.5"/>
+                </svg>
+            </span>
+        </div>
+    </div>
+
+</div>
+
+<!-- ========== JavaScript ========== -->
+<script>
+// 全域變數
+let metadataList = [];
+let skippedLines = [];
+
+// 切換範例
+function toggleExample() {
+    const content = document.getElementById('example-content');
+    const toggle = document.getElementById('example-toggle');
+    content.classList.toggle('show');
+    toggle.classList.toggle('active');
+}
+
+// 從文字中提取 DOI（並記錄被忽略的行）
+function extractDOIs(text) {
+    if (!text) return [];
+    const dois = [];
+    skippedLines = [];
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+
+        const match = line.match(/(10\.\d{4,}\/[^\s,;"'<>\]]+)/);
+        if (match) {
+            let doi = match[1].replace(/[.,;:)\]]+$/, '');
+            if (doi.startsWith('10.') && doi.includes('/')) {
+                dois.push(doi);
+            } else {
+                skippedLines.push(line);
+            }
+        } else {
+            // 沒有找到 DOI 格式，記錄為被忽略
+            skippedLines.push(line);
+        }
+    }
+
+    return dois;
+}
+
+// 查詢 CrossRef API
+async function fetchCrossRefMetadata(doi) {
+    const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
+
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) return null;
+
+        const json = await response.json();
+        const data = json.message;
+
+        const authors = [];
+        if (data.author) {
+            for (const author of data.author) {
+                if (author.family) {
+                    let name = author.family;
+                    if (author.given) {
+                        name = `${author.family}, ${author.given}`;
+                    }
+                    authors.push(name);
+                }
+            }
+        }
+
+        let year = '';
+        if (data['published-print']) {
+            year = String(data['published-print']['date-parts'][0][0]);
+        } else if (data['published-online']) {
+            year = String(data['published-online']['date-parts'][0][0]);
+        } else if (data.created) {
+            year = String(data.created['date-parts'][0][0]);
+        }
+
+        return {
+            doi: doi,
+            title: data.title ? data.title[0] : '',
+            authors: authors,
+            year: year,
+            journal: data['container-title'] ? data['container-title'][0] : '',
+            volume: data.volume || '',
+            issue: data.issue || '',
+            pages: data.page || '',
+            issn: data.ISSN ? data.ISSN[0] : '',
+            abstract: data.abstract || '',
+            type: data.type || 'journal-article',
+            url: `https://doi.org/${doi}`,
+            verified: true
+        };
+    } catch (error) {
+        console.error(`驗證失敗: ${doi}`, error);
+        return null;
+    }
+}
+
+// 開始驗證
+async function startConversion() {
+    const input = document.getElementById('doi-input').value;
+    const dois = extractDOIs(input);
+
+    // 顯示格式錯誤提示
+    const skippedNotice = document.getElementById('skipped-notice');
+    const skippedItems = document.getElementById('skipped-items');
+    if (skippedLines.length > 0) {
+        skippedNotice.style.display = 'block';
+        skippedItems.innerHTML = skippedLines.slice(0, 10).map(line =>
+            `<li>${line.length > 50 ? line.substring(0, 50) + '...' : line}</li>`
+        ).join('');
+        if (skippedLines.length > 10) {
+            skippedItems.innerHTML += `<li>...還有 ${skippedLines.length - 10} 行</li>`;
+        }
+    } else {
+        skippedNotice.style.display = 'none';
+    }
+
+    if (dois.length === 0) {
+        alert('未找到有效的 DOI。\n\nDOI 必須以「10.」開頭，例如：10.1136/bmj.n71\n\n請檢查您的輸入格式。');
+        return;
+    }
+
+    metadataList = [];
+    const failedDOIs = [];
+
+    const progressContainer = document.getElementById('progress-container');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const convertBtn = document.getElementById('convert-btn');
+
+    progressContainer.style.display = 'block';
+    convertBtn.disabled = true;
+    convertBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+        </svg>
+        驗證中...
+    `;
+
+    for (let i = 0; i < dois.length; i++) {
+        const doi = dois[i];
+        progressText.textContent = `正在驗證 (${i + 1}/${dois.length}): ${doi}`;
+        progressFill.style.width = `${((i + 1) / dois.length) * 100}%`;
+
+        const metadata = await fetchCrossRefMetadata(doi);
+
+        if (metadata) {
+            metadataList.push(metadata);
+        } else {
+            failedDOIs.push(doi);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    progressContainer.style.display = 'none';
+    convertBtn.disabled = false;
+    convertBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        開始驗證
+    `;
+
+    displayResults(metadataList, failedDOIs, dois.length);
+}
+
+// 顯示結果
+function displayResults(results, failed, total) {
+    const resultSection = document.getElementById('result-section');
+    resultSection.style.display = 'block';
+
+    document.getElementById('stat-success').textContent = results.length;
+    document.getElementById('stat-fail').textContent = failed.length;
+    document.getElementById('stat-total').textContent = total;
+
+    const failList = document.getElementById('fail-list');
+    const failItems = document.getElementById('fail-items');
+    if (failed.length > 0) {
+        failList.style.display = 'block';
+        failItems.innerHTML = failed.map(doi => `<li>${doi}</li>`).join('');
+    } else {
+        failList.style.display = 'none';
+    }
+
+    const tbody = document.getElementById('result-tbody');
+    const externalIcon = `<svg class="external-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+    </svg>`;
+
+    tbody.innerHTML = results.map(meta => {
+        const title = meta.title.length > 60 ? meta.title.substring(0, 60) + '...' : meta.title;
+        const authors = meta.authors.slice(0, 2).join(', ') + (meta.authors.length > 2 ? ' et al.' : '');
+        const journal = meta.journal.length > 30 ? meta.journal.substring(0, 30) + '...' : meta.journal;
+        const doiUrl = `https://doi.org/${meta.doi}`;
+
+        return `<tr>
+            <td><a href="${doiUrl}" target="_blank" class="doi-link" title="點擊開啟文獻頁面">${meta.doi}${externalIcon}</a></td>
+            <td class="title-cell"><a href="${doiUrl}" target="_blank" title="${meta.title}">${title}</a></td>
+            <td>${authors}</td>
+            <td>${meta.year}</td>
+            <td>${journal}</td>
+        </tr>`;
+    }).join('');
+
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// 產生 RIS 格式
+function generateRIS(metadataList) {
+    const typeMap = {
+        'journal-article': 'JOUR',
+        'book': 'BOOK',
+        'book-chapter': 'CHAP',
+        'proceedings-article': 'CONF'
+    };
+
+    return metadataList.map(meta => {
+        const lines = [`TY  - ${typeMap[meta.type] || 'JOUR'}`];
+        meta.authors.forEach(author => lines.push(`AU  - ${author}`));
+        if (meta.title) lines.push(`TI  - ${meta.title}`);
+        if (meta.year) lines.push(`PY  - ${meta.year}`);
+        if (meta.journal) {
+            lines.push(`JO  - ${meta.journal}`);
+            lines.push(`T2  - ${meta.journal}`);
+        }
+        if (meta.volume) lines.push(`VL  - ${meta.volume}`);
+        if (meta.issue) lines.push(`IS  - ${meta.issue}`);
+        if (meta.pages) lines.push(`SP  - ${meta.pages}`);
+        if (meta.doi) {
+            lines.push(`DO  - ${meta.doi}`);
+            lines.push(`UR  - https://doi.org/${meta.doi}`);
+        }
+        if (meta.issn) lines.push(`SN  - ${meta.issn}`);
+        if (meta.abstract) {
+            lines.push(`AB  - ${meta.abstract.replace(/<[^>]+>/g, '')}`);
+        }
+        lines.push('ER  - ');
+        lines.push('');
+        return lines.join('\n');
+    }).join('\n');
+}
+
+// 產生 BibTeX 格式
+function generateBibTeX(metadataList) {
+    return metadataList.map((meta, index) => {
+        const firstAuthor = meta.authors.length > 0
+            ? meta.authors[0].split(',')[0].replace(/\s/g, '')
+            : 'Unknown';
+        const citeKey = `${firstAuthor}${meta.year || 'XXXX'}_${index + 1}`;
+        const lines = [`@article{${citeKey},`];
+        if (meta.authors.length > 0) lines.push(`  author = {${meta.authors.join(' and ')}},`);
+        if (meta.title) lines.push(`  title = {${meta.title}},`);
+        if (meta.journal) lines.push(`  journal = {${meta.journal}},`);
+        if (meta.year) lines.push(`  year = {${meta.year}},`);
+        if (meta.volume) lines.push(`  volume = {${meta.volume}},`);
+        if (meta.issue) lines.push(`  number = {${meta.issue}},`);
+        if (meta.pages) lines.push(`  pages = {${meta.pages}},`);
+        if (meta.doi) lines.push(`  doi = {${meta.doi}},`);
+        lines.push('}');
+        lines.push('');
+        return lines.join('\n');
+    }).join('\n');
+}
+
+// 產生 CSV 格式
+function generateCSV(metadataList) {
+    const headers = ['DOI', 'Title', 'Authors', 'Year', 'Journal', 'Volume', 'Issue', 'Pages', 'URL', 'Verified'];
+    const rows = metadataList.map(meta => {
+        return [
+            `"${meta.doi}"`,
+            `"${meta.title.replace(/"/g, '""')}"`,
+            `"${meta.authors.join('; ').replace(/"/g, '""')}"`,
+            `"${meta.year}"`,
+            `"${meta.journal.replace(/"/g, '""')}"`,
+            `"${meta.volume}"`,
+            `"${meta.issue}"`,
+            `"${meta.pages}"`,
+            `"https://doi.org/${meta.doi}"`,
+            `"TRUE"`
+        ].join(',');
+    });
+    return '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+}
+
+// 下載檔案（修正版）
+function downloadFile(content, filename, mimeType) {
+    try {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        // 延遲清理
+        setTimeout(function() {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+
+        return true;
+    } catch (e) {
+        console.error('下載失敗:', e);
+        alert('下載失敗，請嘗試右鍵另存或更換瀏覽器。');
+        return false;
+    }
+}
+
+// 下載 RIS
+function downloadRIS() {
+    if (metadataList.length === 0) {
+        alert('沒有已驗證的文獻可下載');
+        return;
+    }
+    const content = generateRIS(metadataList);
+    downloadFile(content, 'verified_references.ris', 'application/x-research-info-systems;charset=utf-8');
+}
+
+// 下載 BibTeX
+function downloadBibTeX() {
+    if (metadataList.length === 0) {
+        alert('沒有已驗證的文獻可下載');
+        return;
+    }
+    const content = generateBibTeX(metadataList);
+    downloadFile(content, 'verified_references.bib', 'application/x-bibtex;charset=utf-8');
+}
+
+// 下載 CSV
+function downloadCSV() {
+    if (metadataList.length === 0) {
+        alert('沒有已驗證的文獻可下載');
+        return;
+    }
+    const content = generateCSV(metadataList);
+    downloadFile(content, 'verified_references.csv', 'text/csv;charset=utf-8');
+}
+</script>
+
+</body>
+</html>
