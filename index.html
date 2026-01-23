@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<!-- ========== AI 文獻驗證 & RIS 轉換器 v7.6 ========== -->
+<!-- ========== AI 文獻驗證 & RIS 轉換器 v7.7 ========== -->
 <!-- 開發者：陳思行（CSX）｜ 匯東華智慧體部 -->
 <!-- 建立日期：2026-01-23 -->
 <!-- v5 更新：放大警告 DOI 並加紅底白字背景、陳思行改為 CSX 圖章 -->
@@ -946,6 +946,63 @@
 .hdh-result-table .title-cell a:hover {
     color: var(--hdh-red);
     text-decoration: underline;
+}
+
+/* ==================== 選取控制 ==================== */
+.hdh-select-control {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    margin-bottom: 0;
+    border: 1px solid var(--hdh-border);
+}
+
+.hdh-select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--hdh-dark);
+    font-size: 14px;
+}
+
+.hdh-select-all-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--hdh-red);
+}
+
+.hdh-select-count {
+    color: var(--hdh-red);
+    font-weight: bold;
+    font-size: 14px;
+    padding: 4px 12px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid var(--hdh-red);
+}
+
+.hdh-result-table .select-header {
+    width: 50px;
+    text-align: center;
+}
+
+.hdh-result-table .select-cell {
+    width: 50px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.hdh-result-table .ref-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--hdh-red);
 }
 
 /* ==================== 失敗清單（加大字體） ==================== */
@@ -1911,10 +1968,20 @@ body:not(.has-results) .hdh-download-title{
                 <ul id="fail-items"></ul>
             </div>
 
+            <!-- 選取控制列 -->
+            <div class="hdh-select-control">
+                <label class="hdh-select-all-label">
+                    <input type="checkbox" id="select-all-checkbox" checked onchange="toggleSelectAll()">
+                    <span>全選</span>
+                </label>
+                <span class="hdh-select-count" id="select-count">已選 0 / 0 筆</span>
+            </div>
+
             <!-- 結果表格 -->
             <table class="hdh-result-table" id="result-table">
                 <thead>
                     <tr>
+                        <th class="select-header">選取</th>
                         <th>DOI<span class="link-hint">點擊可開啟原文</span></th>
                         <th>標題</th>
                         <th>作者</th>
@@ -2125,7 +2192,7 @@ body:not(.has-results) .hdh-download-title{
 
         <!-- 工具資訊（置於聯絡區下方） -->
         <div class="hdh-tool-footerline">
-            AI 文獻驗證 &amp; RIS 轉換器 <span class="hdh-ver">v7.6</span>
+            AI 文獻驗證 &amp; RIS 轉換器 <span class="hdh-ver">v7.7</span>
             <span class="hdh-sep">｜</span>
             <span class="hdh-copy">© 2026 <a href="https://www.medatatw.com" target="_blank" rel="noopener">匯東華統計顧問有限公司</a></span>
         </div>
@@ -2169,9 +2236,9 @@ body:not(.has-results) .hdh-download-title{
 // 全域變數
 // === Free plan limits (front-end) ===
 const FREE_PLAN = {
-  LIMIT_PER_RUN: 30,           // maximum unique DOIs verified per run (soft limit)
-  COOLDOWN_MINUTES: 5,         // cooldown window
-  MAX_RUNS_PER_WINDOW: 2       // max verify runs within cooldown window
+  LIMIT_PER_RUN: 30,           // 每次最多驗證 30 筆
+  COOLDOWN_MINUTES: 5,         // 5 分鐘窗口
+  MAX_RUNS_PER_WINDOW: 3       // 窗口內最多 3 次
 };
 
 function nowTs(){ return Date.now(); }
@@ -2269,8 +2336,13 @@ function extractDOIsWithReport(text) {
 
         let doi = m[1].trim();
 
-        // 清理尾巴：常見句點/逗號/分號/引號/中括號/尖括號
-        doi = doi.replace(/[\.,;:"'\]>]+$/, '');
+        // === 暴力清洗 v7.7 ===
+        // 1. 清理尾巴：常見標點、括號、引號等
+        doi = doi.replace(/[\.,;:"')\]>]+$/g, '');
+        // 2. 清理頭部：可能殘留的括號（罕見但有可能）
+        doi = doi.replace(/^[(\[]+/, '');
+        // 3. 再次清理尾巴（防止多層括號）
+        doi = doi.replace(/[\.,;:"')\]>]+$/g, '');
 
         // 基本保底
         if (!doi.startsWith('10.') || !doi.includes('/')) {
@@ -2552,7 +2624,7 @@ function displayResults(results, failed, total) {
         <line x1="10" y1="14" x2="21" y2="3"/>
     </svg>`;
 
-    tbody.innerHTML = results.map(meta => {
+    tbody.innerHTML = results.map((meta, idx) => {
         const title = meta.title.length > 60 ? meta.title.substring(0, 60) + '...' : meta.title;
         const authors = meta.authors.slice(0, 2).join(', ') + (meta.authors.length > 2 ? ' et al.' : '');
         const journal = meta.journal.length > 30 ? meta.journal.substring(0, 30) + '...' : meta.journal;
@@ -2564,6 +2636,9 @@ function displayResults(results, failed, total) {
         </button>`;
 
 return `<tr>
+    <td class="select-cell">
+        <input type="checkbox" class="ref-checkbox" data-doi="${meta.doi}" checked onchange="updateSelectCount()">
+    </td>
     <td>
         <a href="${doiUrl}" target="_blank" class="doi-link" title="點擊開啟文獻頁面">${meta.doi}${externalIcon}</a>
         <div class="doi-actions">${citeBtn}</div>
@@ -2575,7 +2650,48 @@ return `<tr>
         </tr>`;
     }).join('');
 
+    // 更新選取數量
+    updateSelectCount();
+
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ==================== 選取功能 ====================
+
+// 全選/取消全選
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const checkboxes = document.querySelectorAll('.ref-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    updateSelectCount();
+}
+
+// 更新選取數量顯示
+function updateSelectCount() {
+    const checkboxes = document.querySelectorAll('.ref-checkbox');
+    const checkedCount = document.querySelectorAll('.ref-checkbox:checked').length;
+    const totalCount = checkboxes.length;
+
+    const countEl = document.getElementById('select-count');
+    if (countEl) {
+        countEl.textContent = `已選 ${checkedCount} / ${totalCount} 筆`;
+    }
+
+    // 更新全選 checkbox 狀態
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = (checkedCount === totalCount && totalCount > 0);
+        selectAllCheckbox.indeterminate = (checkedCount > 0 && checkedCount < totalCount);
+    }
+}
+
+// 取得已選取的 metadata
+function getSelectedMetadata() {
+    const checkedDOIs = new Set();
+    document.querySelectorAll('.ref-checkbox:checked').forEach(cb => {
+        checkedDOIs.add(cb.dataset.doi);
+    });
+    return metadataList.filter(m => checkedDOIs.has(m.doi));
 }
 
 // 產生 RIS 格式
@@ -2681,34 +2797,40 @@ function downloadFile(content, filename, mimeType) {
     }
 }
 
-// 下載 RIS
+// 下載 RIS（僅下載已勾選的文獻）
 function downloadRIS() {
-    if (metadataList.length === 0) {
-        alert('沒有已驗證的文獻可下載');
+    const selected = getSelectedMetadata();
+    if (selected.length === 0) {
+        alert('請至少勾選一筆文獻');
         return;
     }
-    const content = generateRIS(metadataList);
+    const content = generateRIS(selected);
     downloadFile(content, 'verified_references.ris', 'application/x-research-info-systems;charset=utf-8');
+    showToast(`已下載 ${selected.length} 筆文獻（RIS 格式）`);
 }
 
-// 下載 BibTeX
+// 下載 BibTeX（僅下載已勾選的文獻）
 function downloadBibTeX() {
-    if (metadataList.length === 0) {
-        alert('沒有已驗證的文獻可下載');
+    const selected = getSelectedMetadata();
+    if (selected.length === 0) {
+        alert('請至少勾選一筆文獻');
         return;
     }
-    const content = generateBibTeX(metadataList);
+    const content = generateBibTeX(selected);
     downloadFile(content, 'verified_references.bib', 'application/x-bibtex;charset=utf-8');
+    showToast(`已下載 ${selected.length} 筆文獻（BibTeX 格式）`);
 }
 
-// 下載 CSV
+// 下載 CSV（僅下載已勾選的文獻）
 function downloadCSV() {
-    if (metadataList.length === 0) {
-        alert('沒有已驗證的文獻可下載');
+    const selected = getSelectedMetadata();
+    if (selected.length === 0) {
+        alert('請至少勾選一筆文獻');
         return;
     }
-    const content = generateCSV(metadataList);
+    const content = generateCSV(selected);
     downloadFile(content, 'verified_references.csv', 'text/csv;charset=utf-8');
+    showToast(`已下載 ${selected.length} 筆文獻（CSV 格式）`);
 }
 
 
@@ -2988,12 +3110,13 @@ function copySingleCitation(doi, style){
 }
 
 function copyAllCitations(style){
-    if (!metadataList || metadataList.length === 0){
-        alert('沒有已驗證的文獻可複製');
+    const selected = getSelectedMetadata();
+    if (!selected || selected.length === 0){
+        alert('請至少勾選一筆文獻');
         return;
     }
 
-    const lines = metadataList.map((m, idx) => {
+    const lines = selected.map((m, idx) => {
         let t = '';
         if (style === 'VAN') {
             // Vancouver 批次：自動編號、每筆一行
@@ -3010,6 +3133,7 @@ function copyAllCitations(style){
     const text = (style === 'VAN') ? lines.join('\n') : lines.join('\n\n');
 
     copyToClipboard(text);
+    showToast(`已複製 ${selected.length} 筆引用（${style} 格式）`);
 }
 
 /* ====== 引用格式彈窗（v6.7）====== */
@@ -3127,6 +3251,21 @@ function initCiteModal(){
 
 // === Free plan helpers: copy overflow DOIs & share ===
 const CANONICAL_URL = 'https://cshowme.github.io/doi-verifier/';
+
+// Toast 通知函數
+function showToast(message, duration = 2000){
+  // 使用現有的 citeToast 元素，或創建新的
+  let toast = document.getElementById('citeToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'citeToast';
+    toast.className = 'cite-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, duration);
+}
 
 function getShareUrl(){
   try{
