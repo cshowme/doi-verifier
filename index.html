@@ -2103,16 +2103,16 @@ doi:10.1371/journal.pdig.0000198
       </div>
     </div>
 
-    <!-- Panel B: Export -->
+    <!-- Panel B: 檔案匯出與驗證報表 (v7.7.5: UI 恢復兩大塊) -->
     <div class="hdh-download-panel">
       <h4>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B82226" stroke-width="2">
           <path d="M12 3v12"/><path d="M7 10l5 5 5-5"/>
           <path d="M5 21h14"/>
         </svg>
-        匯出至書目管理軟體
+        檔案匯出與驗證報表
       </h4>
-      <p class="hdh-panel-hint">匯入 EndNote / Zotero / Mendeley，或用於 SR/MA 管理。</p>
+      <p class="hdh-panel-hint">RIS/BibTeX 可匯入書目軟體，CSV 供 Excel/R 分析用</p>
       <div class="hdh-download-grid">
         <button class="hdh-download-btn" onclick="downloadRIS()">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -2144,7 +2144,7 @@ doi:10.1371/journal.pdig.0000198
           <span class="format">CSV 格式</span>
           <span class="desc">Excel / R</span>
         </button>
-      
+
         <button class="hdh-download-btn" onclick="downloadSRReportLite()">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M4 4h16v16H4z"/>
@@ -2157,7 +2157,7 @@ doi:10.1371/journal.pdig.0000198
           <span class="format">SR 報表 Lite</span>
           <span class="desc">Unique / Not Found</span>
         </button>
-</div>
+      </div>
     </div>
   </div>
 </div>
@@ -2759,28 +2759,33 @@ function displayResults(results, failed, total) {
 
     tbody.innerHTML = results.map((meta, idx) => {
         // 防禦性檢查：確保欄位存在，避免 undefined 錯誤
-        const titleText = meta.title || '無標題';
-        const title = titleText.length > 60 ? titleText.substring(0, 60) + '...' : titleText;
+        // v7.7.3: XSS 修復 - 所有用戶可控輸入必須 escape
+        const rawTitleText = meta.title || '無標題';
+        const titleText = escapeHtml(rawTitleText);
+        const title = rawTitleText.length > 60 ? escapeHtml(rawTitleText.substring(0, 60) + '...') : titleText;
         const authorsList = meta.authors || [];
-        const authors = authorsList.length > 0
+        const rawAuthors = authorsList.length > 0
             ? authorsList.slice(0, 2).join(', ') + (authorsList.length > 2 ? ' et al.' : '')
             : '未知作者';
+        const authors = escapeHtml(rawAuthors);
         // 若無期刊名稱，顯示文獻類型（書籍、會議論文等）
-        const journalText = meta.journal || typeNameMap[meta.type] || '其他類型';
-        const journal = journalText.length > 30 ? journalText.substring(0, 30) + '...' : journalText;
-        const doiUrl = `https://doi.org/${meta.doi}`;
+        const rawJournalText = meta.journal || typeNameMap[meta.type] || '其他類型';
+        const journalText = escapeHtml(rawJournalText);
+        const journal = rawJournalText.length > 30 ? escapeHtml(rawJournalText.substring(0, 30) + '...') : journalText;
+        const doiUrl = `https://doi.org/${encodeURIComponent(meta.doi)}`;
+        const safeDOI = safeDoi(meta.doi);
 
-        const citeBtn = `<button class="cite-open-btn" type="button" onclick="openCiteModal('${safeDoi(meta.doi)}')">
+        const citeBtn = `<button class="cite-open-btn" type="button" onclick="openCiteModal('${safeDOI}')">
             <span class="cite-open-icon" aria-hidden="true">❝</span>
             引用格式
         </button>`;
 
 return `<tr>
     <td class="select-cell">
-        <input type="checkbox" class="ref-checkbox" data-doi="${meta.doi}" checked onchange="updateSelectCount()">
+        <input type="checkbox" class="ref-checkbox" data-doi="${safeDOI}" checked onchange="updateSelectCount()">
     </td>
     <td>
-        <a href="${doiUrl}" target="_blank" class="doi-link" title="點擊開啟文獻頁面">${meta.doi}${externalIcon}</a>
+        <a href="${doiUrl}" target="_blank" class="doi-link" title="點擊開啟文獻頁面">${escapeHtml(meta.doi)}${externalIcon}</a>
         <div class="doi-actions">${citeBtn}</div>
     </td>
             <td class="title-cell"><a href="${doiUrl}" target="_blank" title="${titleText}">${title}</a></td>
@@ -2892,19 +2897,36 @@ function generateBibTeX(metadataList) {
 }
 
 // 產生 CSV 格式
+// v7.7.4: 修復 null/undefined 導致的 JavaScript 錯誤
 function generateCSV(metadataList) {
     const headers = ['DOI', 'Title', 'Authors', 'Year', 'Journal', 'Volume', 'Issue', 'Pages', 'URL', 'Verified'];
+
+    // 安全取值函數：處理 null/undefined 並 escape CSV 特殊字符
+    const safeValue = (val) => {
+        if (val === null || val === undefined) return '';
+        return String(val).replace(/"/g, '""');
+    };
+
     const rows = metadataList.map(meta => {
+        const doi = safeValue(meta.doi);
+        const title = safeValue(meta.title);
+        const authors = Array.isArray(meta.authors) ? meta.authors.join('; ') : safeValue(meta.authors);
+        const year = safeValue(meta.year);
+        const journal = safeValue(meta.journal);
+        const volume = safeValue(meta.volume);
+        const issue = safeValue(meta.issue);
+        const pages = safeValue(meta.pages);
+
         return [
-            `"${meta.doi}"`,
-            `"${meta.title.replace(/"/g, '""')}"`,
-            `"${meta.authors.join('; ').replace(/"/g, '""')}"`,
-            `"${meta.year}"`,
-            `"${meta.journal.replace(/"/g, '""')}"`,
-            `"${meta.volume}"`,
-            `"${meta.issue}"`,
-            `"${meta.pages}"`,
-            `"https://doi.org/${meta.doi}"`,
+            `"${doi}"`,
+            `"${title.replace(/"/g, '""')}"`,
+            `"${authors.replace(/"/g, '""')}"`,
+            `"${year}"`,
+            `"${journal.replace(/"/g, '""')}"`,
+            `"${volume}"`,
+            `"${issue}"`,
+            `"${pages}"`,
+            `"https://doi.org/${doi}"`,
             `"TRUE"`
         ].join(',');
     });
@@ -2937,7 +2959,15 @@ function downloadFile(content, filename, mimeType) {
     }
 }
 
+// v7.7.6: 統一檔名時間戳記格式（專業化命名）
+function getFileTimestamp() {
+    const now = new Date();
+    const pad2 = (n) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}${pad2(now.getMonth()+1)}${pad2(now.getDate())}_${pad2(now.getHours())}${pad2(now.getMinutes())}`;
+}
+
 // 下載 RIS（僅下載已勾選的文獻）
+// v7.7.6: 統一檔名格式 Medatatw_DOI_Verifier_RIS_YYYYMMDD_HHMM.ris
 function downloadRIS() {
     const selected = getSelectedMetadata();
     if (selected.length === 0) {
@@ -2945,11 +2975,13 @@ function downloadRIS() {
         return;
     }
     const content = generateRIS(selected);
-    downloadFile(content, 'verified_references.ris', 'application/x-research-info-systems;charset=utf-8');
+    const filename = `Medatatw_DOI_Verifier_RIS_${getFileTimestamp()}.ris`;
+    downloadFile(content, filename, 'application/x-research-info-systems;charset=utf-8');
     showToast(`已下載 ${selected.length} 筆文獻（RIS 格式）`);
 }
 
 // 下載 BibTeX（僅下載已勾選的文獻）
+// v7.7.6: 統一檔名格式 Medatatw_DOI_Verifier_BibTeX_YYYYMMDD_HHMM.bib
 function downloadBibTeX() {
     const selected = getSelectedMetadata();
     if (selected.length === 0) {
@@ -2957,11 +2989,13 @@ function downloadBibTeX() {
         return;
     }
     const content = generateBibTeX(selected);
-    downloadFile(content, 'verified_references.bib', 'application/x-bibtex;charset=utf-8');
+    const filename = `Medatatw_DOI_Verifier_BibTeX_${getFileTimestamp()}.bib`;
+    downloadFile(content, filename, 'application/x-bibtex;charset=utf-8');
     showToast(`已下載 ${selected.length} 筆文獻（BibTeX 格式）`);
 }
 
 // 下載 CSV（僅下載已勾選的文獻）
+// v7.7.6: 統一檔名格式 Medatatw_DOI_Verifier_CSV_YYYYMMDD_HHMM.csv
 function downloadCSV() {
     const selected = getSelectedMetadata();
     if (selected.length === 0) {
@@ -2969,7 +3003,8 @@ function downloadCSV() {
         return;
     }
     const content = generateCSV(selected);
-    downloadFile(content, 'verified_references.csv', 'text/csv;charset=utf-8');
+    const filename = `Medatatw_DOI_Verifier_CSV_${getFileTimestamp()}.csv`;
+    downloadFile(content, filename, 'text/csv;charset=utf-8');
     showToast(`已下載 ${selected.length} 筆文獻（CSV 格式）`);
 }
 
