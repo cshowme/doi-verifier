@@ -2395,6 +2395,34 @@ function toggleExample() {
 }
 
 // 從文字中提取 DOI（並記錄被忽略的行）
+
+// === Security Patch v7.7.1 (2026-01-25) ===
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function safeDoi(doi) {
+    if (!doi) return '';
+    return doi.replace(/['"`\<>]/g, '');
+}
+
+// === v7.7.1 新增：全形轉半形（修復全形字元導致 DOI 無法識別的問題）===
+function normalizeFullWidth(text) {
+    return text
+        .replace(/／/g, '/')    // 全形斜線
+        .replace(/：/g, ':')    // 全形冒號
+        .replace(/．/g, '.')    // 全形句點
+        .replace(/－/g, '-')    // 全形減號
+        .replace(/　/g, ' ')    // 全形空格
+        .replace(/「/g, '')     // 中文左引號（直接移除）
+        .replace(/」/g, '')     // 中文右引號（直接移除）
+        .replace(/（/g, '(')    // 全形左括號
+        .replace(/）/g, ')');   // 全形右括號
+}
+
 function extractDOIsWithReport(text) {
     const report = {
         dois: [],
@@ -2416,7 +2444,8 @@ function extractDOIsWithReport(text) {
     const doiCountMap = new Map();
 
     for (let rawLine of lines) {
-        const line = (rawLine || '').trim();
+        // v7.7.1: 先全形轉半形，再 trim
+        const line = normalizeFullWidth((rawLine || '').trim());
         if (!line) continue;
 
         const m = line.match(doiRegex);
@@ -2427,13 +2456,13 @@ function extractDOIsWithReport(text) {
 
         let doi = m[1].trim();
 
-        // === 暴力清洗 v7.7 ===
-        // 1. 清理尾巴：常見標點、括號、引號等
-        doi = doi.replace(/[\.,;:"')\]>]+$/g, '');
+        // === 暴力清洗 v7.7.1 ===
+        // 1. 清理尾巴：常見標點、括號、引號等（含中文引號「」）
+        doi = doi.replace(/[\.,;:"')\]>「」]+$/g, '');
         // 2. 清理頭部：可能殘留的括號（罕見但有可能）
-        doi = doi.replace(/^[(\[]+/, '');
+        doi = doi.replace(/^[(\[「]+/, '');
         // 3. 再次清理尾巴（防止多層括號）
-        doi = doi.replace(/[\.,;:"')\]>]+$/g, '');
+        doi = doi.replace(/[\.,;:"')\]>「」]+$/g, '');
 
         // 基本保底
         if (!doi.startsWith('10.') || !doi.includes('/')) {
@@ -2703,7 +2732,7 @@ function displayResults(results, failed, total) {
     const failItems = document.getElementById('fail-items');
     if (failed.length > 0) {
         failList.style.display = 'block';
-        failItems.innerHTML = failed.map(doi => `<li>${doi}</li>`).join('');
+        failItems.innerHTML = failed.map(doi => `<li>${escapeHtml(doi)}</li>`).join('');
     } else {
         failList.style.display = 'none';
     }
@@ -2741,7 +2770,7 @@ function displayResults(results, failed, total) {
         const journal = journalText.length > 30 ? journalText.substring(0, 30) + '...' : journalText;
         const doiUrl = `https://doi.org/${meta.doi}`;
 
-        const citeBtn = `<button class="cite-open-btn" type="button" onclick="openCiteModal('${meta.doi}')">
+        const citeBtn = `<button class="cite-open-btn" type="button" onclick="openCiteModal('${safeDoi(meta.doi)}')">
             <span class="cite-open-icon" aria-hidden="true">❝</span>
             引用格式
         </button>`;
@@ -2962,7 +2991,8 @@ function downloadSRReportLite() {
     const now = new Date();
     const pad2 = (n)=>String(n).padStart(2,'0');
     const stamp = `${now.getFullYear()}${pad2(now.getMonth()+1)}${pad2(now.getDate())}_${pad2(now.getHours())}${pad2(now.getMinutes())}`;
-    const checked_at = now.toISOString();
+    // v7.7.1: 改用本地時間格式（原本 ISO 格式顯示為 UTC 時區）
+    const checked_at = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
     const source = 'crossref';
     const rawMap = (run && run.rawInputByDoi) ? run.rawInputByDoi : (window._doiRawInputByDoi || {});
 
@@ -2980,8 +3010,28 @@ function downloadSRReportLite() {
         'reason'
     ];
 
+    // v7.7.2: 清理特殊 Unicode 字符，避免 Excel 亂碼
+    const sanitizeForExcel = (str) => {
+        return str
+            // 替換常見的特殊引號為標準引號
+            .replace(/[\u2018\u2019\u201A\u201B]/g, "'")  // 各種單引號
+            .replace(/[\u201C\u201D\u201E\u201F]/g, '"')  // 各種雙引號
+            // 替換特殊連字符和破折號
+            .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, '-')
+            // 替換特殊空格
+            .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
+            // 移除零寬字符和組合字符標記
+            .replace(/[\u200C\u200D\uFEFF]/g, '')
+            // 移除可能導致亂碼的控制字符
+            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+            // 將其他非 BMP 字符（如 emoji）移除或替換
+            .replace(/[\uD800-\uDFFF]/g, '');
+    };
+
     const esc = (v) => {
-        const s = (v === null || v === undefined) ? '' : String(v);
+        let s = (v === null || v === undefined) ? '' : String(v);
+        // v7.7.2: 先清理特殊字符
+        s = sanitizeForExcel(s);
         // CSV escape
         if (/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
         return s;
@@ -3057,7 +3107,8 @@ function downloadSRReportLite() {
         ]);
     }
 
-    const csv = [header.join(',')]
+    // v7.7.2: 加入 BOM 確保 Excel 正確識別 UTF-8 編碼
+    const csv = '\uFEFF' + [header.join(',')]
         .concat(rows.map(r => r.join(',')))
         .join('\n');
 
